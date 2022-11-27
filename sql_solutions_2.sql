@@ -338,7 +338,22 @@ from (
             on ( date_format(b.pay_date, '%Y-%m') = d.pay_month)
 group by date_format(b.pay_date, '%Y-%m'), department_id, d.comp_avg) final;
 
--- 92 
+-- 92 Write an SQL query to report for each install date, the number of players that installed the game on that day, and the day one retention.
+
+SELECT install_dt, 
+       Count(player_id)                             AS installs, 
+       Round(Count(next_day) / Count(player_id), 2) AS Day1_retention 
+FROM   (SELECT a.player_id, 
+               a.install_dt, 
+               b.event_date AS next_day 
+        FROM   (SELECT player_id, 
+                       Min(event_date) AS install_dt 
+                FROM   activity 
+                GROUP  BY player_id) AS a 
+               LEFT JOIN activity AS b 
+                      ON Datediff(b.event_date, a.install_dt) = 1
+                         AND a.player_id = b.player_id ) AS t ;
+
 -- 93 same as 50 
 
 -- 94 Write an SQL query to report the students (student_id, student_name) being quiet in all exams. Do not return the student who has never taken any exam.
@@ -355,5 +370,28 @@ group by s.student_id
 having min(rn_asc) > 1 and min(rn_desc) > 1;
 
 -- 95 same as 94 
+-- 96 Write a query to output the user id, song id, and cumulative count of song plays as of 4 August 2022 sorted in descending order.
+
+SELECT user_id, song_id, SUM(song_plays) AS song_count
+FROM (
+  SELECT user_id, song_id, song_plays
+  FROM songs_history
+  UNION ALL
+  SELECT user_id, song_id, COUNT(song_id) AS song_plays
+  FROM songs_weekly
+  WHERE listen_time <= '2022-08-04 23:59:59'
+  GROUP BY user_id, song_id
+) AS report
+GROUP BY user_id, song_id
+ORDER BY song_count DESC;
+
+-- 97 Write a query to find the confirmation rate of users who confirmed their signups with text messages. Round the result to 2 decimal places.
+
+select 
+  round((sum(case when t.signup_action='Confirmed' then 1 else 0 end)*1.0/count(*)),2) as confirm_rate
+FROM emails e 
+  left join texts t 
+  on e.email_id = t.email_id
+  and t.signup_action = 'Confirmed';
 
 
